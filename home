@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Operation: Rescue the Pav</title>
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Patrick+Hand&family=Poppins:wght@400;700;900&display=swap');
+        
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: #fdf6e3;
+            overflow: hidden;
+            user-select: none;
+        }
+        
+        .handwritten {
+            font-family: 'Patrick Hand', cursive;
+        }
+
+        .slide-enter {
+            animation: slideIn 0.5s ease-out forwards;
+        }
+
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .pohutukawa-gradient {
+            background: linear-gradient(135deg, #ef4444 0%, #b91c1c 100%);
+        }
+
+        .beach-gradient {
+            background: linear-gradient(135deg, #fcd34d 0%, #fbbf24 100%);
+        }
+
+        /* Confetti Animation */
+        .confetti {
+            position: absolute;
+            width: 15px;
+            height: 15px;
+            animation: fall linear forwards;
+            z-index: 50;
+        }
+
+        @keyframes fall {
+            to { transform: translateY(100vh) rotate(720deg); }
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect } = React;
+
+        // --- Internal Icon Components (Replaces External Library to fix UMD errors) ---
+        const IconBase = ({ children, className, size = 24, ...props }) => (
+            <svg 
+                xmlns="http://www.w3.org/2000/svg" 
+                width={size} 
+                height={size} 
+                viewBox="0 0 24 24" 
+                fill="none" 
+                stroke="currentColor" 
+                strokeWidth="2" 
+                strokeLinecap="round" 
+                strokeLinejoin="round" 
+                className={className}
+                {...props}
+            >
+                {children}
+            </svg>
+        );
+
+        const Icons = {
+            Trees: (props) => (
+                <IconBase {...props}>
+                    <path d="M10 10v.2A3 3 0 0 1 8.9 16v0H5v0h0a3 3 0 0 1-1-5.8V10a3 3 0 0 1 5.3-2.1" />
+                    <path d="M7 16v6" />
+                    <path d="M13 19v3" />
+                    <path d="M12 19h8.3a1 1 0 0 0 .7-1.7L18 14h.3a1 1 0 0 0 .7-1.7L16 9h.2a1 1 0 0 0 .6-1.7L13 2.1a1 1 0 0 0-1.7 0l-3.9 5.3a1 1 0 0 0 .6 1.7H10l-1.8 3.3a1 1 0 0 0 .7 1.7H12" />
+                </IconBase>
+            ),
+            Search: (props) => (
+                <IconBase {...props}>
+                    <circle cx="11" cy="11" r="8" />
+                    <path d="m21 21-4.3-4.3" />
+                </IconBase>
+            ),
+            Users: (props) => (
+                <IconBase {...props}>
+                    <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+                    <circle cx="9" cy="7" r="4" />
+                    <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
+                    <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+                </IconBase>
+            ),
+            ArrowRight: (props) => (
+                <IconBase {...props}>
+                    <path d="M5 12h14" />
+                    <path d="m12 5 7 7-7 7" />
+                </IconBase>
+            ),
+            Timer: (props) => (
+                <IconBase {...props}>
+                    <line x1="10" x2="14" y1="2" y2="2" />
+                    <line x1="12" x2="15" y1="14" y2="11" />
+                    <circle cx="12" cy="14" r="8" />
+                </IconBase>
+            ),
+            IceCream: (props) => (
+                <IconBase {...props}>
+                    <path d="m7 11 4.08 10.35a1 1 0 0 0 1.84 0L17 11" />
+                    <path d="M17 7A5 5 0 0 0 7 7" />
+                    <path d="M17 7a2 2 0 0 1 0 4H7a2 2 0 0 1 0-4" />
+                </IconBase>
+            ),
+            Sun: (props) => (
+                <IconBase {...props}>
+                    <circle cx="12" cy="12" r="4" />
+                    <path d="M12 2v2" />
+                    <path d="M12 20v2" />
+                    <path d="m4.93 4.93 1.41 1.41" />
+                    <path d="m17.66 17.66 1.41 1.41" />
+                    <path d="M2 12h2" />
+                    <path d="M20 12h2" />
+                    <path d="m6.34 17.66-1.41 1.41" />
+                    <path d="m19.07 4.93-1.41 1.41" />
+                </IconBase>
+            ),
+            ShoppingBag: (props) => (
+                <IconBase {...props}>
+                    <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z" />
+                    <path d="M3 6h18" />
+                    <path d="M16 10a4 4 0 0 1-8 0" />
+                </IconBase>
+            ),
+            Lock: (props) => (
+                <IconBase {...props}>
+                    <rect width="18" height="11" x="3" y="11" rx="2" ry="2" />
+                    <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                </IconBase>
+            )
+        };
+        
+        // Destructure icons for use
+        const { 
+            Trees, 
+            Search, 
+            Users, 
+            ArrowRight, 
+            Timer,
+            IceCream,
+            Sun,
+            ShoppingBag,
+            Lock
+        } = Icons;
+
+        // --- Game Content Data ---
+        const GAME_DATA = [
+            {
+                id: 'intro',
+                type: 'story',
+                title: "Operation: Rescue the Pav",
+                content: "It is 11:30 AM on Christmas Day at the family Bach in the Coromandel.\n\n The BBQ is firing up. The Six60 is playing. But disaster has struck.\n\n Auntie Shaz went to the fridge to get the legendary Pavlova... and it's GONE.",
+                icon: <Trees size={64} className="text-red-600" />,
+                bg: "bg-red-50"
+            },
+            {
+                id: 'brief',
+                type: 'story',
+                title: "Your Mission",
+                content: "You are the elite cousins. The 'cool table' detectives.\n\n You have 5 puzzles to solve to track down the Pavlova thief before lunch is ruined.\n\n Grab your pens. Eyes on the screen. Let's save Christmas.",
+                icon: <Search size={64} className="text-blue-600" />,
+                bg: "bg-blue-50"
+            },
+            {
+                id: 'puzzle1',
+                type: 'puzzle',
+                title: "Puzzle 1: The Ransom Note",
+                content: "A note was left on the fridge door. It's written in 'Gen Z Code' to confuse the Boomers. Translate the emojis to find the location.",
+                visual: "📍 👇 🌲 🏖️ 🏃 ➡️ 🧊 🍦 🏪",
+                visualLabel: "DECODE THE MESSAGE",
+                hint: "Think about where you'd run to on a hot Kiwi day.",
+                answer: "Down at the Beach, running to the Dairy (Ice Cream Shop)",
+                points: 100,
+                bg: "bg-yellow-50"
+            },
+            {
+                id: 'story2',
+                type: 'story',
+                title: "The Chase Begins",
+                content: "You sprint down to the local Dairy. The owner, Trev, says he saw someone suspicious buying a mince pie and a V energy drink.\n\n He hands you the security camera footage, but it's corrupted!",
+                icon: <Users size={64} className="text-green-600" />,
+                bg: "bg-green-50"
+            },
+            {
+                id: 'puzzle2',
+                type: 'puzzle',
+                title: "Puzzle 2: Who's Who?",
+                content: "Use the logic clues to identify the suspect's outfit.\n\n1. They were NOT wearing jandals.\n2. They were wearing something red, but not a hat.\n3. They had stripes on, but not on their shirt.\n\nCHOICES:",
+                visual: "A: Red Hat, Blue Shirt, Jandals\nB: Green Shirt, Red Shorts, Gumboots\nC: Red Singlet, Striped Shorts, Sneakers",
+                visualLabel: "LOGIC TEST",
+                hint: "Eliminate the options one by one.",
+                answer: "C: Red Singlet, Striped Shorts, Sneakers",
+                points: 150,
+                bg: "bg-gray-50"
+            },
+            {
+                id: 'puzzle3',
+                type: 'puzzle',
+                title: "Puzzle 3: The Kiwi Christmas Playlist",
+                content: "You find a phone dropped on the sand playing a playlist. Decode the missing words from these iconic Kiwi Xmas lyrics to unlock the phone.",
+                visual: "\"Snoopy's Christmas\" chorus:\n'Snoopy's ____ vs The ____ ____'",
+                visualLabel: "COMPLETE THE LYRIC",
+                hint: "It's the most played song in NZ every December.",
+                answer: "Baron vs The Red Baron",
+                points: 100,
+                bg: "bg-red-50"
+            },
+            {
+                id: 'puzzle4',
+                type: 'puzzle',
+                title: "Puzzle 4: The Receipt Math",
+                content: "The thief dropped a receipt from The Warehouse. They bought supplies to hide the Pav. Calculate the total cost.",
+                visual: "2x Rolls of Duct Tape ($5.00 ea)\n1x Tarp ($15.50)\n3x Whittaker's Blocks (2 for $10 deal!)\n\n TOTAL = ?",
+                visualLabel: "QUICK MATHS",
+                hint: "Watch out for that chocolate deal. They bought 3 blocks, so 2 are $10, 1 is full price ($6 assuming std price). Wait... usually $6. Let's say $6 for the single.",
+                answer: "$36.50 (10 + 15.50 + 10 + 6)",
+                points: 200,
+                bg: "bg-blue-50"
+            },
+            {
+                id: 'puzzle5',
+                type: 'puzzle',
+                title: "Puzzle 5: The Final Code",
+                content: "You corner the thief behind the Pohutukawa tree! It's... Cousin Gary! He just wanted it for himself. To open the chilly bin and save the Pav, solve this riddle.",
+                visual: "\"I have legs but cannot walk.\nI have a face but no eyes.\nI tell you when it's time for presents.\nWhat am I?\"",
+                visualLabel: "THE RIDDLE",
+                hint: "Tick tock.",
+                answer: "A Clock (or a Watch)",
+                points: 150,
+                bg: "bg-green-50"
+            },
+            {
+                id: 'victory',
+                type: 'ending',
+                title: "MISSION ACCOMPLISHED!",
+                content: "You cracked the code! The Pavlova is safe. Cousin Gary has been relegated to doing the dishes.\n\n Merry Christmas!",
+                icon: <IceCream size={80} className="text-pink-500" />,
+                bg: "bg-yellow-100"
+            }
+        ];
+
+        // --- Components ---
+
+        const StartScreen = ({ onStart }) => (
+            <div className="h-screen flex flex-col items-center justify-center p-8 text-center pohutukawa-gradient text-white relative overflow-hidden">
+                <div className="absolute top-0 left-0 w-full h-full opacity-10 pointer-events-none">
+                     {/* Pattern bg */}
+                     <div className="w-full h-full" style={{backgroundImage: 'radial-gradient(circle, #ffffff 2px, transparent 2px)', backgroundSize: '30px 30px'}}></div>
+                </div>
+                <div className="mb-6 animate-bounce relative z-10">
+                    <Sun size={100} color="#fbbf24" fill="#fbbf24" />
+                </div>
+                <h1 className="text-6xl md:text-8xl font-black mb-4 tracking-tight drop-shadow-lg relative z-10">
+                    OPERATION: <br/>
+                    <span className="text-yellow-300">RESCUE THE PAV</span>
+                </h1>
+                <p className="text-xl md:text-2xl mb-12 max-w-2xl font-semibold opacity-90 relative z-10">
+                    An Interactive Kiwi Mystery for the Coolest Detectives
+                </p>
+                <button 
+                    onClick={onStart}
+                    className="relative z-10 bg-white text-red-600 px-12 py-4 rounded-full text-2xl font-bold shadow-xl hover:scale-105 transition-transform flex items-center gap-3 cursor-pointer"
+                >
+                    Start The Game <ArrowRight />
+                </button>
+                <p className="mt-8 text-sm opacity-75 relative z-10">Puzzlemaster: Connect to Projector. Teams: Get Pens Ready.</p>
+            </div>
+        );
+
+        const StorySlide = ({ slide, onNext }) => (
+            <div className={`h-screen flex flex-col items-center justify-center p-8 text-center ${slide.bg} transition-colors duration-500`}>
+                <div className="mb-8 p-6 bg-white rounded-full shadow-lg slide-enter">
+                    {slide.icon}
+                </div>
+                <h2 className="text-4xl font-bold mb-6 text-gray-800 slide-enter">{slide.title}</h2>
+                <div className="text-2xl md:text-3xl text-gray-700 max-w-4xl leading-relaxed handwritten slide-enter" style={{whiteSpace: 'pre-line'}}>
+                    {slide.content}
+                </div>
+                <button 
+                    onClick={onNext}
+                    className="mt-12 bg-gray-900 text-white px-8 py-3 rounded-lg text-xl font-bold hover:bg-gray-700 transition-colors flex items-center gap-2 slide-enter cursor-pointer"
+                >
+                    Continue <ArrowRight size={20} />
+                </button>
+            </div>
+        );
+
+        const PuzzleSlide = ({ slide, onNext }) => {
+            const [revealed, setRevealed] = useState(false);
+            const [timer, setTimer] = useState(0);
+
+            useEffect(() => {
+                setRevealed(false);
+                setTimer(0);
+                const interval = setInterval(() => setTimer(t => t + 1), 1000);
+                return () => clearInterval(interval);
+            }, [slide]);
+
+            const formatTime = (seconds) => {
+                const mins = Math.floor(seconds / 60);
+                const secs = seconds % 60;
+                return `${mins}:${secs.toString().padStart(2, '0')}`;
+            };
+
+            return (
+                <div className={`h-screen flex flex-col p-4 md:p-8 ${slide.bg} transition-colors duration-500`}>
+                    <div className="max-w-7xl mx-auto w-full flex-grow flex flex-col">
+                        {/* Header */}
+                        <div className="flex justify-between items-center mb-6 bg-white p-4 rounded-xl shadow-sm border-b-4 border-gray-100">
+                            <h2 className="text-2xl md:text-3xl font-bold text-gray-800 flex items-center gap-3">
+                                <Search className="text-red-500"/> {slide.title}
+                            </h2>
+                            <div className="flex items-center gap-3 text-xl font-mono text-gray-600 bg-gray-100 px-4 py-2 rounded-lg">
+                                <Timer size={24} className="text-red-500" /> 
+                                {formatTime(timer)}
+                            </div>
+                        </div>
+
+                        {/* Content Grid */}
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 md:gap-8 flex-grow">
+                            {/* Left: The Challenge */}
+                            <div className="bg-white p-6 md:p-8 rounded-2xl shadow-xl flex flex-col border-l-8 border-red-500 relative overflow-hidden">
+                                <div className="absolute top-0 right-0 p-4 opacity-5">
+                                    <ShoppingBag size={200} />
+                                </div>
+                                <p className="text-xl md:text-2xl text-gray-700 mb-8 font-medium relative z-10">{slide.content}</p>
+                                
+                                <div className="mt-auto bg-gray-900 text-white p-6 md:p-8 rounded-xl text-center relative z-10 shadow-inner">
+                                    <span className="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-4">{slide.visualLabel}</span>
+                                    <p className="text-2xl md:text-4xl font-black tracking-wider leading-relaxed" style={{whiteSpace: 'pre-line'}}>
+                                        {slide.visual}
+                                    </p>
+                                </div>
+                            </div>
+
+                            {/* Right: The Solution Area */}
+                            <div className="flex flex-col gap-6">
+                                <div className="bg-yellow-100 p-6 rounded-xl border-2 border-yellow-300">
+                                    <h3 className="font-bold text-yellow-800 mb-2 flex items-center gap-2">
+                                        <Sun size={20}/> HINT
+                                    </h3>
+                                    <p className="text-lg text-yellow-900 italic handwritten font-bold">{slide.hint}</p>
+                                </div>
+
+                                <div className="flex-grow flex flex-col justify-end">
+                                    {!revealed ? (
+                                        <button 
+                                            onClick={() => setRevealed(true)}
+                                            className="w-full bg-indigo-600 text-white py-6 rounded-xl text-2xl font-bold shadow-lg hover:bg-indigo-700 transition-all transform hover:-translate-y-1 flex items-center justify-center gap-3 cursor-pointer"
+                                        >
+                                            <Lock size={24} /> REVEAL ANSWER
+                                        </button>
+                                    ) : (
+                                        <div className="bg-green-100 p-8 rounded-xl border-4 border-green-500 slide-enter shadow-2xl">
+                                            <h3 className="text-green-800 font-bold mb-2 text-sm uppercase tracking-wide">The Solution Is:</h3>
+                                            <p className="text-3xl md:text-4xl font-black text-green-900 mb-6">
+                                                {slide.answer}
+                                            </p>
+                                            <div className="flex justify-between items-center border-t-2 border-green-200 pt-4">
+                                                <span className="font-bold text-green-700 text-xl">Worth {slide.points} Pts</span>
+                                                <button 
+                                                    onClick={onNext}
+                                                    className="bg-gray-900 text-white px-6 py-3 rounded-lg font-bold hover:bg-gray-800 flex items-center gap-2 hover:scale-105 transition-transform cursor-pointer"
+                                                >
+                                                    Next Stage <ArrowRight size={18} />
+                                                </button>
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        const EndingScreen = ({ slide }) => {
+            useEffect(() => {
+                // Simple confetti loop
+                const container = document.getElementById('confetti-container');
+                const colors = ['#ef4444', '#22c55e', '#fbbf24', '#3b82f6'];
+                
+                const interval = setInterval(() => {
+                    const el = document.createElement('div');
+                    el.classList.add('confetti');
+                    el.style.left = Math.random() * 100 + 'vw';
+                    el.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+                    el.style.animationDuration = (Math.random() * 2 + 2) + 's';
+                    container.appendChild(el);
+                    
+                    setTimeout(() => el.remove(), 4000);
+                }, 100);
+
+                return () => clearInterval(interval);
+            }, []);
+
+            return (
+                <div className={`h-screen flex flex-col items-center justify-center p-8 text-center ${slide.bg} overflow-hidden relative`}>
+                    <div id="confetti-container" className="absolute top-0 left-0 w-full h-full pointer-events-none"></div>
+                    <div className="z-10 bg-white p-12 rounded-3xl shadow-2xl max-w-3xl border-8 border-yellow-300 slide-enter">
+                        <div className="mb-6 flex justify-center animate-pulse">
+                            {slide.icon}
+                        </div>
+                        <h2 className="text-5xl md:text-7xl font-black text-gray-800 mb-6 uppercase text-transparent bg-clip-text bg-gradient-to-r from-red-600 to-green-600">
+                            {slide.title}
+                        </h2>
+                        <p className="text-2xl text-gray-600 mb-8 font-medium handwritten">
+                            {slide.content}
+                        </p>
+                        <div className="p-6 bg-gray-50 rounded-xl">
+                            <h3 className="text-xl font-bold text-gray-400 uppercase mb-4">Total Possible Score</h3>
+                            <p className="text-6xl font-black text-indigo-600">700 PTS</p>
+                        </div>
+                        <button 
+                            onClick={() => window.location.reload()}
+                            className="mt-8 text-gray-400 hover:text-gray-600 font-semibold underline cursor-pointer"
+                        >
+                            Play Again
+                        </button>
+                    </div>
+                </div>
+            );
+        };
+
+        const App = () => {
+            const [gameState, setGameState] = useState('start'); // start, playing, end
+            const [currentSlideIndex, setCurrentSlideIndex] = useState(0);
+
+            const startPlaying = () => {
+                setGameState('playing');
+                setCurrentSlideIndex(0);
+            };
+
+            const nextSlide = () => {
+                if (currentSlideIndex < GAME_DATA.length - 1) {
+                    setCurrentSlideIndex(prev => prev + 1);
+                }
+            };
+
+            const currentSlide = GAME_DATA[currentSlideIndex];
+
+            if (gameState === 'start') {
+                return <StartScreen onStart={startPlaying} />;
+            }
+
+            return (
+                <div className="antialiased h-screen w-screen overflow-hidden">
+                    {currentSlide.type === 'story' && (
+                        <StorySlide 
+                            slide={currentSlide} 
+                            onNext={nextSlide} 
+                        />
+                    )}
+                    {currentSlide.type === 'puzzle' && (
+                        <PuzzleSlide 
+                            slide={currentSlide} 
+                            onNext={nextSlide} 
+                        />
+                    )}
+                    {currentSlide.type === 'ending' && (
+                        <EndingScreen slide={currentSlide} />
+                    )}
+                    
+                    {/* Persistent Progress Bar */}
+                    <div className="fixed bottom-0 left-0 w-full h-3 bg-gray-200 z-50">
+                        <div 
+                            className="h-full bg-gradient-to-r from-red-500 to-yellow-500 transition-all duration-500 ease-out"
+                            style={{ width: `${((currentSlideIndex + 1) / GAME_DATA.length) * 100}%` }}
+                        />
+                    </div>
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
